@@ -219,6 +219,24 @@ while(ss &gt;&gt; s)
       </tags>
   </entry>
   <entry>
+    <title>Hello World</title>
+    <url>/2024/02/09/hello-world/</url>
+    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>VsCode配置以及算法的学习思路</title>
     <url>/2024/02/16/VsCode%E9%85%8D%E7%BD%AE%E4%BB%A5%E5%8F%8A%E7%AE%97%E6%B3%95%E7%9A%84%E5%AD%A6%E4%B9%A0%E6%80%9D%E8%B7%AF/</url>
     <content><![CDATA[<h2 id="1-VsCode配置方法"><a href="#1-VsCode配置方法" class="headerlink" title="1.VsCode配置方法"></a>1.VsCode配置方法</h2><p>先用的这个： </p>
@@ -314,7 +332,7 @@ while(ss &gt;&gt; s)
 <h2 id="2-linux基本命令"><a href="#2-linux基本命令" class="headerlink" title="2.linux基本命令"></a>2.linux基本命令</h2><p>[2.0 腾讯云服务器](#2.0 腾讯云服务器)</p>
 <p><a href="#2.1.linux%E9%98%B2%E7%81%AB%E5%A2%99%E5%91%BD%E4%BB%A4">2.1.linux防火墙命令</a></p>
 <p><a href="#2.2%E5%9F%BA%E6%9C%AC%E5%91%BD%E4%BB%A4">2.2基本命令</a></p>
-<h4 id="2-0-腾讯云服务器"><a href="#2-0-腾讯云服务器" class="headerlink" title="2.0 腾讯云服务器"></a>2.0 腾讯云服务器</h4><h4 id="2022-10月到期-密码：-50-x33-x32-x39-54-x36-x30-57-54-57-64-113-113-46-x63-x6f-x6d"><a href="#2022-10月到期-密码：-50-x33-x32-x39-54-x36-x30-57-54-57-64-113-113-46-x63-x6f-x6d" class="headerlink" title="-2022.10月到期-密码：&#50;&#x33;&#x32;&#x39;&#54;&#x36;&#x30;&#57;&#54;&#57;&#64;&#113;&#113;&#46;&#x63;&#x6f;&#x6d;"></a>-2022.10月到期-密码：<a href="mailto:&#50;&#x33;&#x32;&#x39;&#54;&#x36;&#x30;&#57;&#54;&#57;&#64;&#113;&#113;&#46;&#x63;&#x6f;&#x6d;">&#50;&#x33;&#x32;&#x39;&#54;&#x36;&#x30;&#57;&#54;&#57;&#64;&#113;&#113;&#46;&#x63;&#x6f;&#x6d;</a></h4><h4 id="地址：121-5-164-60"><a href="#地址：121-5-164-60" class="headerlink" title="-地址：121.5.164.60"></a>-地址：121.5.164.60</h4><h4 id="2-1-linux防火墙命令"><a href="#2-1-linux防火墙命令" class="headerlink" title="2.1.linux防火墙命令"></a>2.1.linux防火墙命令</h4><figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>、开启防火墙 --关闭</span><br><span class="line">    systemctl start firewalld</span><br><span class="line">    systemctl stop firewalld.service</span><br><span class="line">    systemctl status firewalld </span><br><span class="line"></span><br><span class="line"><span class="number">2</span>、开放指定端口</span><br><span class="line">      firewall-cmd --zone=public --add-port=<span class="number">1935</span>/tcp --permanent</span><br><span class="line"> 命令含义：</span><br><span class="line">--zone #作用域</span><br><span class="line">--add-port=<span class="number">1935</span>/tcp  #添加端口，格式为：端口/通讯协议</span><br><span class="line">--permanent  #永久生效，没有此参数重启后失效</span><br><span class="line"></span><br><span class="line"><span class="number">3</span>、重启防火墙</span><br><span class="line">      firewall-cmd --reload</span><br><span class="line"></span><br><span class="line"><span class="number">4</span>、查看端口号</span><br><span class="line">netstat -ntlp   <span class="comment">//查看当前所有tcp端口·</span></span><br><span class="line"></span><br><span class="line">netstat -ntulp |grep <span class="number">1935</span>   <span class="comment">//查看所有1935端口使用情况·</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line"><span class="number">5.</span>列出所有开放</span><br><span class="line">firewall-cmd --<span class="built_in">list</span>-all --permanent</span><br></pre></td></tr></table></figure>
+<h4 id="2-0-腾讯云服务器"><a href="#2-0-腾讯云服务器" class="headerlink" title="2.0 腾讯云服务器"></a>2.0 腾讯云服务器</h4><h4 id="2022-10月到期-密码：-x32-51-50-57-x36-x36-48-x39-x36-x39-64-x71-x71-46-99-x6f-109"><a href="#2022-10月到期-密码：-x32-51-50-57-x36-x36-48-x39-x36-x39-64-x71-x71-46-99-x6f-109" class="headerlink" title="-2022.10月到期-密码：&#x32;&#51;&#50;&#57;&#x36;&#x36;&#48;&#x39;&#x36;&#x39;&#64;&#x71;&#x71;&#46;&#99;&#x6f;&#109;"></a>-2022.10月到期-密码：<a href="mailto:&#x32;&#51;&#50;&#57;&#x36;&#x36;&#48;&#x39;&#x36;&#x39;&#64;&#x71;&#x71;&#46;&#99;&#x6f;&#109;">&#x32;&#51;&#50;&#57;&#x36;&#x36;&#48;&#x39;&#x36;&#x39;&#64;&#x71;&#x71;&#46;&#99;&#x6f;&#109;</a></h4><h4 id="地址：121-5-164-60"><a href="#地址：121-5-164-60" class="headerlink" title="-地址：121.5.164.60"></a>-地址：121.5.164.60</h4><h4 id="2-1-linux防火墙命令"><a href="#2-1-linux防火墙命令" class="headerlink" title="2.1.linux防火墙命令"></a>2.1.linux防火墙命令</h4><figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>、开启防火墙 --关闭</span><br><span class="line">    systemctl start firewalld</span><br><span class="line">    systemctl stop firewalld.service</span><br><span class="line">    systemctl status firewalld </span><br><span class="line"></span><br><span class="line"><span class="number">2</span>、开放指定端口</span><br><span class="line">      firewall-cmd --zone=public --add-port=<span class="number">1935</span>/tcp --permanent</span><br><span class="line"> 命令含义：</span><br><span class="line">--zone #作用域</span><br><span class="line">--add-port=<span class="number">1935</span>/tcp  #添加端口，格式为：端口/通讯协议</span><br><span class="line">--permanent  #永久生效，没有此参数重启后失效</span><br><span class="line"></span><br><span class="line"><span class="number">3</span>、重启防火墙</span><br><span class="line">      firewall-cmd --reload</span><br><span class="line"></span><br><span class="line"><span class="number">4</span>、查看端口号</span><br><span class="line">netstat -ntlp   <span class="comment">//查看当前所有tcp端口·</span></span><br><span class="line"></span><br><span class="line">netstat -ntulp |grep <span class="number">1935</span>   <span class="comment">//查看所有1935端口使用情况·</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line"><span class="number">5.</span>列出所有开放</span><br><span class="line">firewall-cmd --<span class="built_in">list</span>-all --permanent</span><br></pre></td></tr></table></figure>
 
 <h4 id="2-2基本命令"><a href="#2-2基本命令" class="headerlink" title="2.2基本命令"></a>2.2基本命令</h4><p>在linux里跑名为springboot-03-0.0.1-SNAPSHOT.jar的程序，把日志写到temp1.txt:</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nohup java -jar springboot-03-0.0.1-SNAPSHOT.jar &gt;temp1.txt &amp;</span><br></pre></td></tr></table></figure>
@@ -393,23 +411,5 @@ while(ss &gt;&gt; s)
       <tags>
         <tag>笔记</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>Hello World</title>
-    <url>/2024/02/09/hello-world/</url>
-    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
   </entry>
 </search>
