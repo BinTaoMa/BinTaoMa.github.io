@@ -1,0 +1,598 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>MYDB项目详解 | MのBlog</title><meta name="author" content="M.bt"><meta name="copyright" content="M.bt"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="MYDBMYDB 分为后端和前端，前后端通过 socket 进行交互。前端（客户端）的职责很单一，读取用户输入，并发送到后端执行，输出返回结果，并等待下一次输入。MYDB 后端则需要解析 SQL，如果是合法的 SQL，就尝试执行并返回结果。不包括解析器，MYDB 的后端划分为五个模块，每个模块都又一定的职责，通过接口向其依赖的模块提供方法。五个模块如下：  Transaction Manager（">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MYDB项目详解">
+<meta property="og:url" content="http://example.com/2024/06/24/MYDB%E9%A1%B9%E7%9B%AE%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="MのBlog">
+<meta property="og:description" content="MYDBMYDB 分为后端和前端，前后端通过 socket 进行交互。前端（客户端）的职责很单一，读取用户输入，并发送到后端执行，输出返回结果，并等待下一次输入。MYDB 后端则需要解析 SQL，如果是合法的 SQL，就尝试执行并返回结果。不包括解析器，MYDB 的后端划分为五个模块，每个模块都又一定的职责，通过接口向其依赖的模块提供方法。五个模块如下：  Transaction Manager（">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-img-mbt321.oss-cn-beijing.aliyuncs.com/img/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20240201205520.jpg">
+<meta property="article:published_time" content="2024-06-24T12:07:37.000Z">
+<meta property="article:modified_time" content="2024-06-23T21:13:26.506Z">
+<meta property="article:author" content="M.bt">
+<meta property="article:tag" content="项目">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-img-mbt321.oss-cn-beijing.aliyuncs.com/img/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20240201205520.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/2024/06/24/MYDB%E9%A1%B9%E7%9B%AE%E8%AF%A6%E8%A7%A3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.12.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.32/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'MYDB项目详解',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-06-24 05:13:26'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 7
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><meta name="generator" content="Hexo 7.1.1"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://blog-img-mbt321.oss-cn-beijing.aliyuncs.com/img/微信图片_20240201205520.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">8</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">6</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">12</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 娱乐</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://blog-img-mbt321.oss-cn-beijing.aliyuncs.com/img/wallhaven-9depzk (1).jpg')"><nav id="nav"><span id="blog-info"><a href="/" title="MのBlog"><span class="site-name">MのBlog</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 娱乐</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">MYDB项目详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-06-24T12:07:37.000Z" title="发表于 2024-06-24 20:07:37">2024-06-24</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-06-23T21:13:26.506Z" title="更新于 2024-06-24 05:13:26">2024-06-24</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%A1%B9%E7%9B%AE/">项目</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%A1%B9%E7%9B%AE/MYDB/">MYDB</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">字数总计:</span><span class="word-count">8.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>26分钟</span></span><span class="post-meta-separator">|</span><span class="leancloud_visitors" id="/2024/06/24/MYDB%E9%A1%B9%E7%9B%AE%E8%AF%A6%E8%A7%A3/" data-flag-title="MYDB项目详解"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span class="leancloud-visitors-count"><i class="fa-solid fa-spinner fa-spin"></i></span></span><span class="post-meta-separator">|</span><span class="post-meta-commentcount"><i class="far fa-comments fa-fw post-meta-icon"></i><span class="post-meta-label">评论数:</span><a href="/2024/06/24/MYDB%E9%A1%B9%E7%9B%AE%E8%AF%A6%E8%A7%A3/#post-comment" itemprop="discussionUrl"><span class="valine-comment-count" data-xid="/2024/06/24/MYDB%E9%A1%B9%E7%9B%AE%E8%AF%A6%E8%A7%A3/" itemprop="commentCount"><i class="fa-solid fa-spinner fa-spin"></i></span></a></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id=""><a href="#" class="headerlink" title=""></a></h2><h2 id="MYDB"><a href="#MYDB" class="headerlink" title="MYDB"></a>MYDB</h2><p>MYDB 分为后端和前端，前后端通过 socket 进行交互。前端（客户端）的职责很单一，读取用户输入，并发送到后端执行，输出返回结果，并等待下一次输入。MYDB 后端则需要解析 SQL，如果是合法的 SQL，就尝试执行并返回结果。不包括解析器，MYDB 的后端划分为五个模块，每个模块都又一定的职责，通过接口向其依赖的模块提供方法。五个模块如下：</p>
+<ol>
+<li>Transaction Manager（TM）</li>
+<li>Data Manager（DM）</li>
+<li>Version Manager（VM）</li>
+<li>Index Manager（IM）</li>
+<li>Table Manager（TBM）</li>
+</ol>
+<p>五个模块的依赖关系如下：</p>
+<p><img src="https://shinya.click/images/mydb0.jpg" alt="img"></p>
+<p>MYDB 模块依赖</p>
+<p>从这个依赖图中，拓扑排序一下就能看出实现顺序。本教程的实现顺序是 TM -&gt; DM -&gt; VM -&gt; IM -&gt; TBM</p>
+<p>每个模块的职责如下：</p>
+<ol>
+<li>TM 通过维护 XID 文件来维护事务的状态，并提供接口供其他模块来查询某个事务的状态。</li>
+<li>DM 直接管理数据库 DB 文件和日志文件。DM 的主要职责有：1) 分页管理 DB 文件，并进行缓存；2) 管理日志文件，保证在发生错误时可以根据日志进行恢复；3) 抽象 DB 文件为 DataItem 供上层模块使用，并提供缓存。</li>
+<li>VM 基于两段锁协议实现了调度序列的可串行化，并实现了 MVCC 以消除读写阻塞。同时实现了两种隔离级别。</li>
+<li>IM 实现了基于 B+ 树的索引，BTW，目前 where 只支持已索引字段。</li>
+<li>TBM 实现了对字段和表的管理。同时，解析 SQL 语句，并根据语句操作表。</li>
+</ol>
+<h2 id="TM"><a href="#TM" class="headerlink" title="TM"></a>TM</h2><p>让我们通过一个假想的例子来详解一个 <code>XID</code> 文件的结构和如何利用它来记录事务的状态。假设我们的系统已经处理了几个事务，并且事务的 <code>XID</code> 分别是从 1 到 5。我们将看到如何在 <code>XID</code> 文件中记录这些事务的状态。</p>
+<h3 id="XID-文件结构"><a href="#XID-文件结构" class="headerlink" title="XID 文件结构"></a>XID 文件结构</h3><ul>
+<li>文件的第一部分是一个8字节的数字，表示当前文件所记录的事务总数。</li>
+<li>接下来的部分是每个事务的状态，每个状态占用1字节空间。</li>
+</ul>
+<h3 id="事务状态编码"><a href="#事务状态编码" class="headerlink" title="事务状态编码"></a>事务状态编码</h3><p>假设我们用以下编码表示不同的事务状态：</p>
+<ul>
+<li><code>0x00</code> - active (活动)</li>
+<li><code>0x01</code> - committed (已提交)</li>
+<li><code>0x02</code> - aborted (已撤销)</li>
+</ul>
+<h3 id="假设的-XID-文件内容"><a href="#假设的-XID-文件内容" class="headerlink" title="假设的 XID 文件内容"></a>假设的 XID 文件内容</h3><p>假设我们的系统中有5个事务的状态如下：</p>
+<ul>
+<li><code>XID 1</code> - committed</li>
+<li><code>XID 2</code> - aborted</li>
+<li><code>XID 3</code> - committed</li>
+<li><code>XID 4</code> - active</li>
+<li><code>XID 5</code> - committed</li>
+</ul>
+<h3 id="文件布局"><a href="#文件布局" class="headerlink" title="文件布局"></a>文件布局</h3><p>文件的具体布局将如下所示（数字表示事务的状态编码，每个数字代表1字节）：</p>
+<ul>
+<li>头部（8字节）: 存储数字 5 (因为有5个事务)</li>
+<li>事务1的状态（1字节）: 0x01 (committed)</li>
+<li>事务2的状态（1字节）: 0x02 (aborted)</li>
+<li>事务3的状态（1字节）: 0x01 (committed)</li>
+<li>事务4的状态（1字节）: 0x00 (active)</li>
+<li>事务5的状态（1字节）: 0x01 (committed)</li>
+</ul>
+<h3 id="文件示例的字节表达："><a href="#文件示例的字节表达：" class="headerlink" title="文件示例的字节表达："></a>文件示例的字节表达：</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">css</span><br><span class="line">Copy code</span><br><span class="line">[00 00 00 00 00 00 00 05][01][02][01][00][01]</span><br></pre></td></tr></table></figure>
+
+<p>这里：</p>
+<ul>
+<li><code>[00 00 00 00 00 00 00 05]</code> 是文件头部的8字节，表示管理的事务总数为5。</li>
+<li>后续的每个 <code>[XX]</code> 表示一个事务的状态，从 <code>XID 1</code> 到 <code>XID 5</code>。</li>
+</ul>
+<p>通过这样的布局，<code>TransactionManager</code> 可以轻松定位任何事务的状态信息。例如，如果想知道 <code>XID 4</code> 的状态，可以直接跳到文件的第12字节位置（头部8字节 + 前三个事务各占1字节 + 1字节偏移量因为事务ID从1开始）。这种方法提供了快速访问和更新事务状态的能力，非常适合需要高效事务处理的数据库系统。</p>
+<h3 id="TM问题"><a href="#TM问题" class="headerlink" title="TM问题"></a>TM问题</h3><p>1.如何保证文件不发生问题<br>通过检查前8个字节查看事务的数量 之后计算总的字节数与文件的总字节数比较，来保证问题</p>
+<p>2.为啥是xid-1呢</p>
+<p>因为数组或者内存都是索引都是从0开始，计算的时候要这样取</p>
+<p>3.为什么需要xid</p>
+<ul>
+<li><strong>唯一标识</strong>：每个事务有一个唯一的 <code>XID</code>，这允许系统精确地追踪和控制每个独立的操作。</li>
+<li><strong>状态管理</strong>：通过 <code>XID</code>，系统能够管理每个事务的状态（活动、已提交、已撤销）。这对于处理并发操作和系统故障恢复至关重要。</li>
+<li><strong>错误恢复</strong>：在系统或硬件故障时，<code>XID</code> 和事务状态可以帮助系统决定哪些事务需要重新执行（例如，所有未提交的事务）。</li>
+</ul>
+<p>4.事务状态有哪些</p>
+<ul>
+<li>每个事务有三种可能的状态：<ul>
+<li><code>active</code>：事务正在进行中，尚未结束。</li>
+<li><code>committed</code>：事务已经完成并成功提交。</li>
+<li><code>aborted</code>：事务已经被撤销或回滚。</li>
+</ul>
+</li>
+<li>这些状态被保存在一个特定的文件（XID 文件）中，每个事务状态占用一个字节的空间。</li>
+</ul>
+<h2 id="DM"><a href="#DM" class="headerlink" title="DM"></a>DM</h2><h3 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h3><p>由于分页管理和数据项（DataItem）管理都涉及缓存，这里设计一个更通用的缓存框架。三个hashmap</p>
+<p>这段代码描述的是一个高级缓存系统，采用引用计数和锁机制来管理缓存项，以适应多线程环境中的数据访问和同步需求。缓存系统由一个抽象类 <code>AbstractCache&lt;T&gt;</code> 实现，该类定义了获取和释放缓存资源的抽象方法，以及实现了资源管理的具体逻辑。这个实现确保了线程安全，并能有效处理资源的加载和释放。以下是代码的详解及其功能：</p>
+<h4 id="缓存系统的组件"><a href="#缓存系统的组件" class="headerlink" title="缓存系统的组件"></a>缓存系统的组件</h4><ol>
+<li><strong>缓存的数据存储 (<code>cache</code>)</strong>:<ul>
+<li>用一个 <code>HashMap</code> 存储实际的缓存数据，键是资源的唯一标识符（<code>key</code>），值是资源对象（<code>T</code>）。</li>
+</ul>
+</li>
+<li><strong>资源的引用计数 (<code>references</code>)</strong>:<ul>
+<li>另一个 <code>HashMap</code> 用于追踪每个资源在缓存中的引用次数。引用计数是管理资源何时可以从缓存中安全移除的重要机制。</li>
+</ul>
+</li>
+<li><strong>正在获取的资源标记 (<code>getting</code>)</strong>:<ul>
+<li>第三个 <code>HashMap</code> 用于标记那些正被其他线程加载的资源。这防止了对同一资源的多余请求，如果一个资源正在加载中，其他请求该资源的线程会等待，而不是同时尝试加载同一个资源。</li>
+</ul>
+</li>
+</ol>
+<h4 id="缓存操作的流程"><a href="#缓存操作的流程" class="headerlink" title="缓存操作的流程"></a>缓存操作的流程</h4><p>获取资源 (<code>get()</code> 方法)</p>
+<ul>
+<li><p>等待其他线程加载资源</p>
+<ul>
+<li>如果请求的资源正在被其他线程加载（<code>getting</code> 中有记录），当前线程将等待（通过 <code>Thread.sleep</code>），直到资源可用。</li>
+</ul>
+</li>
+<li><p>直接从缓存中获取</p>
+<ul>
+<li>如果资源已在缓存中，则直接返回该资源，并将该资源的引用计数增加。</li>
+</ul>
+</li>
+<li><p>加载新资源</p>
+<p>如果资源不在缓存中且缓存未满，标记资源为正在获取（在 <code>getting</code> 中设置标记），然后加载资源。</p>
+<ul>
+<li>如果加载成功，将资源添加到缓存，并设置引用计数为1。</li>
+<li>如果加载失败，清除正在获取的标记，并处理异常。</li>
+</ul>
+</li>
+</ul>
+<p>释放资源 (<code>release()</code> 方法)</p>
+<ul>
+<li>减少引用计数<ul>
+<li>减少指定资源的引用计数。如果引用计数降至0，则调用 <code>releaseForCache()</code> 方法将资源写回到持久存储（如果有这样的操作），并从缓存中移除该资源。</li>
+</ul>
+</li>
+</ul>
+<p>安全关闭 (<code>close()</code> 方法)</p>
+<ul>
+<li>强制回源并清理所有资源<ul>
+<li>在关闭缓存时，遍历所有缓存项，强制释放每个资源，并清理相关数据结构。</li>
+</ul>
+</li>
+</ul>
+<h4 id="缓存的同步和线程安全"><a href="#缓存的同步和线程安全" class="headerlink" title="缓存的同步和线程安全"></a>缓存的同步和线程安全</h4><p>通过使用锁（<code>lock.lock()</code> 和 <code>lock.unlock()</code>），上述方法确保在多线程环境下对缓存的访问是线程安全的。锁的使用确保了对缓存结构的修改是互斥的，防止了数据竞争和潜在的并发错误。</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>这个缓存框架通过抽象方法提供了灵活性，允许定制资源获取和释放的具体逻辑，而通过引用计数和锁机制提供了一种稳健的方法来管理缓存资源的生命周期和并发访问，非常适合需要高并发处理和资源管理的应用场景。</p>
+<h4 id="缓存问题"><a href="#缓存问题" class="headerlink" title="缓存问题"></a>缓存问题</h4><p>为什么不选择lru？</p>
+<p>确实，LRU（Least Recently Used）缓存策略因其简单高效在许多场景中被广泛使用。然而，引用计数策略在特定场景下可能比LRU更合适，特别是在数据库管理系统（DBMS）和其他需要精细控制资源生命周期的系统中。以下是一个例子，详细解释为什么在某些情况下选择引用计数而不是LRU。</p>
+<p>场景描述</p>
+<p>假设你正在开发一个视频编辑软件，该软件允许用户同时编辑多个视频片段。这些视频片段需要被频繁读取和修改，并且由于视频文件通常很大，因此使用缓存来存储当前正在编辑的片段是很有必要的。</p>
+<p>问题出现</p>
+<p>如果采用LRU缓存策略，最近最少使用的视频片段将会被自动驱逐出缓存，以便为新的片段腾出空间。考虑以下情形：</p>
+<ol>
+<li><strong>编辑工作重叠</strong>：用户可能在多个视频片段之间来回切换，对它们进行编辑。使用LRU时，一个长时间未被访问但正处于半编辑状态的视频片段可能会被驱逐。当用户返回这个片段时，他们可能会发现所有未保存的更改都已消失，因为片段被驱逐且更改未被写回磁盘。</li>
+<li><strong>资源驱逐时的数据一致性问题</strong>：<ul>
+<li><strong>不回源</strong>：如果不将修改过的数据写回数据源，那么所有更改都将丢失，这对于需要持久化更改的应用来说是不可接受的。</li>
+<li><strong>回源</strong>：如果每次资源被驱逐时都进行回源操作，这可能导致不必要的I&#x2F;O开销，特别是当数据并未发生更改时。</li>
+<li><strong>缓存抖动</strong>：频繁地将资源放回缓存并再次被驱逐（因为缓存已满），这会导致所谓的缓存抖动，降低缓存的效率。</li>
+</ul>
+</li>
+</ol>
+<p>引用计数的优势</p>
+<p>使用引用计数策略，在这种情况下会更合适：</p>
+<ul>
+<li><strong>明确的生命周期控制</strong>：每个缓存项的生命周期清晰可控。资源只有在没有任何组件引用它时才会被释放。这为用户提供了一定的安全性，确保正在使用的资源不会被意外驱逐。</li>
+<li><strong>减少不必要的写回操作</strong>：只有在确定资源不再被需要时才会被驱逐和回源，减少了不必要的磁盘I&#x2F;O操作。</li>
+<li><strong>适应复杂依赖关系</strong>：在处理多个相关资源（例如，多个相互依赖的视频片段）时，引用计数可以更好地管理资源之间的依赖关系。</li>
+</ul>
+<p>结论</p>
+<p>在选择缓存策略时，需要考虑应用的特定需求。虽然LRU提供了一种高效的通用解决方案，但在需要详细管理资源生命周期、防止数据丢失和减少不必要I&#x2F;O的情况下，引用计数可能是一个更好的选择。在视频编辑软件的场景中，引用计数可以保证用户正在工作的视频片段不会因为缓存策略而意外丢失，提高了应用的稳定性和用户的满意度。</p>
+<h3 id="缓存页面"><a href="#缓存页面" class="headerlink" title="缓存页面"></a>缓存页面</h3><p>本节主要内容就是 DM 模块向下对文件系统的抽象部分。DM 将文件系统抽象成页面，每次对文件系统的读写都是以页面为单位的。同样，从文件系统读进来的数据也是以页面为单位进行缓存的。</p>
+<p>读取磁盘文件为缓存页面类型，插入数据之后，标记页面为脏数据，之后缓存驱逐的时候写入磁盘</p>
+<p>在数据库的页面管理系统中，FSO (Free Space Offset) 是用来标识页面内第一个空闲字节的位置。这样设计的目的是为了快速找到可以插入新数据的位置。现在，让我们更详细地解释如何使用 FSO，并以 <code>Page</code> 类为例进行说明。</p>
+<h4 id="FSO-Free-Space-Offset-详解"><a href="#FSO-Free-Space-Offset-详解" class="headerlink" title="FSO (Free Space Offset) 详解"></a>FSO (Free Space Offset) 详解</h4><p>初始化 FSO</p>
+<p>在 <code>Page</code> 类中，FSO 被初始化为 2。这是因为页面数据的开始两个字节被用来存储 FSO 本身。FSO 是一个 <code>short</code> 类型，占用 2 字节。这意味着：</p>
+<ul>
+<li>从字节索引 <code>0</code> 到 <code>1</code>（共2个字节）用于存储表示空闲空间起始位置的 FSO。</li>
+<li>FSO 的值为 2 表示从字节索引 <code>2</code> 开始的部分是用于存储实际数据的。</li>
+</ul>
+<p>插入数据的过程</p>
+<p>插入数据时，<code>Page</code> 类中的 <code>insertData</code> 方法按以下步骤操作：</p>
+<ol>
+<li><strong>读取当前 FSO</strong>：<ul>
+<li>使用 <code>getFSO</code> 方法读取存储在页面开始的两个字节中的 FSO 值。这个值告诉我们页面中空闲空间的开始位置。</li>
+</ul>
+</li>
+<li><strong>复制新数据到 FSO 指示的位置</strong>：<ul>
+<li>使用 <code>System.arraycopy</code> 方法，将新数据从源数组 <code>newData</code> 复制到 <code>Page</code> 的 <code>data</code> 数组中，复制的起始位置是当前的 FSO。</li>
+<li><code>newData.length</code> 决定了要复制数据的长度。</li>
+</ul>
+</li>
+<li><strong>更新 FSO</strong>：<ul>
+<li>插入数据后，新的 FSO 将是原来的 FSO 加上新插入的数据长度 <code>newData.length</code>。这是因为新数据占据了从原 FSO 开始的一段空间。</li>
+<li>更新后的 FSO 指向下一个空闲的字节，为将来的数据插入做准备。</li>
+</ul>
+</li>
+<li><strong>设置新的 FSO 值</strong>：<ul>
+<li>使用 <code>setFSO</code> 方法，将新计算的 FSO 值写回页面数据的开始两个字节中。</li>
+</ul>
+</li>
+</ol>
+<p>如何更新 FSO</p>
+<p><code>setFSO</code> 方法的工作原理如下：</p>
+<ul>
+<li>将 <code>short</code> 类型的 FSO 值分解为两个字节。由于 Java 使用大端字节序（高字节优先），<code>offset</code> 的低字节存储在数组的第一个位置，高字节存储在第二个位置。</li>
+<li><code>offset &amp; 0xFF</code> 获取 <code>offset</code> 的低字节。</li>
+<li><code>(offset &gt;&gt; 8) &amp; 0xFF</code> 获取 <code>offset</code> 的高字节。</li>
+<li>这两个字节被放回 <code>data</code> 数组的前两个位置，这样 FSO 就更新了。</li>
+</ul>
+<p>小结</p>
+<p>通过这种方式，<code>Page</code> 类能有效地管理页面内的数据存储和空间分配。初始化 FSO 为 2 是因为要为存储 FSO 本身留出空间。更新 FSO 是为了维护对空闲空间的准确跟踪，确保每次数据插入后，新的空闲空间位置都能被正确记录和使用。这样的设计简化了数据插入操作，提高了数据库系统的效率和性能。</p>
+<h4 id="缓存页面问题"><a href="#缓存页面问题" class="headerlink" title="缓存页面问题"></a>缓存页面问题</h4><p>如何确定数据库是否正常关闭？</p>
+<p>数据库文件的第一页，通常用作一些特殊用途，比如存储一些元数据，用来启动检查什么的。MYDB 的第一页，只是用来做启动检查。具体的原理是，在每次数据库启动时，会生成一串随机字节，存储在 100 ~ 107 字节。在数据库正常关闭时，会将这串字节，拷贝到第一页的 108 ~ 115 字节。</p>
+<p>这样数据库在每次启动时，就会检查第一页两处的字节是否相同，以此来判断上一次是否正常关闭。如果是异常关闭，就需要执行数据的恢复流程。</p>
+<h3 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h3><h4 id="日志读写"><a href="#日志读写" class="headerlink" title="日志读写"></a>日志读写</h4><p>日志的二进制文件，按照如下的格式进行排布：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[XChecksum][Log1][Log2][Log3]...[LogN][BadTail]</span><br></pre></td></tr></table></figure>
+
+<p>其中 XChecksum 是一个四字节的整数，是对后续所有日志计算的校验和。Log1 ~ LogN 是常规的日志数据，BadTail 是在数据库崩溃时，没有来得及写完的日志数据，这个 BadTail 不一定存在。</p>
+<p>每条日志的格式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[Size][Checksum][Data]</span><br></pre></td></tr></table></figure>
+
+<p>其中，Size 是一个四字节整数，标识了 Data 段的字节数。Checksum 则是该条日志的校验和。</p>
+<p>在打开一个日志文件时，需要首先校验日志文件的 XChecksum，并移除文件尾部可能存在的 BadTail，由于 BadTail 该条日志尚未写入完成，文件的校验和也就不会包含该日志的校验和，去掉 BadTail 即可保证日志文件的一致性。</p>
+<p>向日志文件写入日志时，也是首先将数据包裹成日志格式，写入文件后，再更新文件的校验和，更新校验和时，会刷新缓冲区，保证内容写入磁盘。</p>
+<h4 id="恢复策略"><a href="#恢复策略" class="headerlink" title="恢复策略"></a>恢复策略</h4><p>多线程</p>
+<p>经过以上的操作，就能保证了 MYDB 在单线程下的恢复性。对于多线程的情况下呢？我们来考虑下面的两种情况。</p>
+<p>第一种：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">T1 begin</span><br><span class="line">T2 begin</span><br><span class="line">T2 U(x)</span><br><span class="line">T1 R(x)</span><br><span class="line">...</span><br><span class="line">T1 commit</span><br><span class="line">MYDB break down</span><br></pre></td></tr></table></figure>
+
+<p>在系统崩溃时，T2 仍然是活跃状态。那么当数据库重新启动，执行恢复例程时，会撤销 T2，它对数据库的影响会被消除。但是由于 T1 读取了 T2 更新的值，既然 T2 被撤销，那么 T1 也应当被撤销。这种情况，就是级联回滚。但是，T1 已经 commit 了，所有 commit 的事务的影响，应当被持久化。这里就造成了矛盾。所以这里需要保证：</p>
+<blockquote>
+<p>规定1：正在进行的事务，不会读取其他任何未提交的事务产生的数据。</p>
+</blockquote>
+<p>第二种情况，假设 x 的初值是 0</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">T1 begin</span><br><span class="line">T2 begin</span><br><span class="line">T1 set x = x+1 // 产生的日志为(T1, U, A, 0, 1)</span><br><span class="line">T2 set x = x+1 // 产生的日志为(T1, U, A, 1, 2)</span><br><span class="line">T2 commit</span><br><span class="line">MYDB break down</span><br></pre></td></tr></table></figure>
+
+<p>在系统崩溃时，T1 仍然是活跃状态。那么当数据库重新启动，执行恢复例程时，会对 T1 进行撤销，对 T2 进行重做，但是，无论撤销和重做的先后顺序如何，x 最后的结果，要么是 0，要么是 2，这都是错误的。</p>
+<blockquote>
+<p>出现这种问题的原因, 归根结底是因为我们的日志太过简单, 仅仅记录了”前相”和”后相”. 并单纯的依靠”前相”undo, 依靠”后相”redo. 这种简单的日志方式和恢复方式, 并不能涵盖住所有数据库操作形成的语义</p>
+</blockquote>
+<p>解决方法有两种：</p>
+<ol>
+<li>增加日志种类</li>
+<li>限制数据库操作</li>
+</ol>
+<p>MYDB 采用的是限制数据库操作，需要保证：</p>
+<blockquote>
+<p>规定2：正在进行的事务，不会修改其他任何未提交的事务修改或产生的数据。</p>
+</blockquote>
+<p>vm 没有删除？<br>vm解决保证规定执行</p>
+<h3 id="页面索引"><a href="#页面索引" class="headerlink" title="页面索引"></a>页面索引</h3><p>页面索引，缓存了每一页的空闲空间。用于在上层模块进行插入操作时，能够快速找到一个合适空间的页面，而无需从磁盘或者缓存中检查每一个页面的信息。</p>
+<p>MYDB 用一个比较粗略的算法实现了页面索引，将一页的空间划分成了 40 个区间。在启动时，就会遍历所有的页面信息，获取页面的空闲空间，安排到这 40 个区间中。insert 在请求一个页时，会首先将所需的空间向上取整，映射到某一个区间，随后取出这个区间的任何一页，都可以满足需求。</p>
+<p>DataItem 中保存的数据，结构如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[ValidFlag] [DataSize] [Data]</span><br></pre></td></tr></table></figure>
+
+<p>其中 ValidFlag 占用 1 字节，标识了该 DataItem 是否有效。删除一个 DataItem，只需要简单地将其有效位设置为 0。DataSize 占用 2 字节，标识了后面 Data 的长度。</p>
+<p>DataManager 是 DM 层直接对外提供方法的类，同时，也实现成 DataItem 对象的缓存。DataItem 存储的 key，是由页号和页内偏移组成的一个 8 字节无符号整数，页号和偏移各占 4 字节。</p>
+<p>DataItem 缓存，<code>getForCache()</code>，只需要从 key 中解析出页号，从 pageCache 中获取到页面，再根据偏移，解析出 DataItem 即可：</p>
+<h2 id="VM"><a href="#VM" class="headerlink" title="VM"></a>VM</h2><p>那么这样，对同一个数据操作的冲突，其实就只有下面这两种情况：</p>
+<ol>
+<li>两个不同事务的 U 操作冲突</li>
+<li>两个不同事务的 U、R 操作冲突</li>
+</ol>
+<p>那么冲突或者不冲突，意义何在？作用在于，<strong>交换两个互不冲突的操作的顺序，不会对最终的结果造成影响</strong>，而交换两个冲突操作的顺序，则是会有影响的。</p>
+<p>现在我们先抛开冲突不谈，记得在第四章举的例子吗，在并发情况下，两个事务同时操作 x。假设 x 的初值是 0：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">T1 begin</span><br><span class="line">T2 begin</span><br><span class="line">R1(x) // T1读到0</span><br><span class="line">R2(x) // T2读到0</span><br><span class="line">U1(0+1) // T1尝试把x+1</span><br><span class="line">U2(0+1) // T2尝试把x+1</span><br><span class="line">T1 commit</span><br><span class="line">T2 commit</span><br></pre></td></tr></table></figure>
+
+<p>由于同时读取 最后 x 的结果是 1，这个结果显然与期望的不符。</p>
+<h3 id="MVCC和2PL-可重复度和执行串行化"><a href="#MVCC和2PL-可重复度和执行串行化" class="headerlink" title="MVCC和2PL_可重复度和执行串行化"></a>MVCC和2PL_可重复度和执行串行化</h3><p>VM 的一个很重要的职责，就是实现了调度序列的可串行化。MYDB 采用两段锁协议（2PL）来实现。当采用 2PL 时，如果某个事务 i 已经对 x 加锁，且另一个事务 j 也想操作 x，但是这个操作与事务 i 之前的操作相互冲突的话，事务 j 就会被阻塞。譬如，T1 已经因为 U1(x) 锁定了 x，那么 T2 对 x 的读或者写操作都会被阻塞，T2 必须等待 T1 释放掉对 x 的锁。</p>
+<p>由此来看，2PL 确实保证了调度序列的可串行话，但是不可避免地导致了事务间的相互阻塞，甚至可能导致死锁。MYDB 为了提高事务处理的效率，降低阻塞概率，实现了 MVCC。</p>
+<p>对于一条记录来说，MYDB 使用 Entry 类维护了其结构。虽然理论上，MVCC 实现了多版本，但是在实现中，VM 并没有提供 Update 操作，对于字段的更新操作由后面的表和字段管理（TBM）实现。所以在 VM 的实现中，一条记录只有一个版本。</p>
+<p>一条记录存储在一条 Data Item 中，所以 Entry 中保存一个 DataItem 的引用即可：</p>
+<p>我们规定，一条 Entry 中存储的数据格式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[XMIN] [XMAX] [DATA]</span><br></pre></td></tr></table></figure>
+
+<p>XMIN 是创建该条记录（版本）的事务编号，而 XMAX 则是删除该条记录（版本）的事务编号。它们的作用将在下一节中说明。DATA 就是这条记录持有的数据。</p>
+<h3 id="可重复读"><a href="#可重复读" class="headerlink" title="可重复读"></a>可重复读</h3><p>不可重复度，会导致一个事务在执行期间对同一个数据项的读取得到不同结果。如下面的结果，加入 X 初始值为 0：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">T1 begin</span><br><span class="line">R1(X) // T1 读得 0</span><br><span class="line">T2 begin</span><br><span class="line">U2(X) // 将 X 修改为 1</span><br><span class="line">T2 commit</span><br><span class="line">R1(X) // T1 读的 1</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，T1 两次读 X，读到的结果不一样。如果想要避免这个情况，就需要引入更严格的隔离级别，即可重复读（repeatable read）。</p>
+<p>T1 在第二次读取的时候，读到了已经提交的 T2 修改的值，导致了这个问题。于是我们可以规定：</p>
+<blockquote>
+<p>事务只能读取它开始时, 就已经结束的那些事务产生的数据版本</p>
+</blockquote>
+<p>这条规定，增加于，事务需要忽略：</p>
+<ol>
+<li>在本事务后开始的事务的数据;</li>
+<li>本事务开始时还是 active 状态的事务的数据</li>
+</ol>
+<p>对于第一条，只需要比较事务 ID，即可确定。而对于第二条，则需要在事务 Ti 开始时，记录下当前活跃的所有事务 SP(Ti)，如果记录的某个版本，XMIN 在 SP(Ti) 中，也应当对 Ti 不可见。</p>
+<h3 id="死锁解决"><a href="#死锁解决" class="headerlink" title="死锁解决"></a>死锁解决</h3><p>上一节提到了 2PL 会阻塞事务，直至持有锁的线程释放锁。可以将这种等待关系抽象成有向边，例如 Tj 在等待 Ti，就可以表示为 Tj –&gt; Ti。这样，无数有向边就可以形成一个图（不一定是连通图）。检测死锁也就简单了，只需要查看这个图中是否有环即可。</p>
+<p>MYDB 使用一个 LockTable 对象，在内存中维护这张图。维护结构如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LockTable</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Map&lt;Long, List&lt;Long&gt;&gt; x2u;  <span class="comment">// 某个XID已经获得的资源的UID列表</span></span><br><span class="line">    <span class="keyword">private</span> Map&lt;Long, Long&gt; u2x;        <span class="comment">// UID被某个XID持有</span></span><br><span class="line">    <span class="keyword">private</span> Map&lt;Long, List&lt;Long&gt;&gt; wait; <span class="comment">// 正在等待UID的XID列表</span></span><br><span class="line">    <span class="keyword">private</span> Map&lt;Long, Lock&gt; waitLock;   <span class="comment">// 正在等待资源的XID的锁</span></span><br><span class="line">    <span class="keyword">private</span> Map&lt;Long, Long&gt; waitU;      <span class="comment">// XID正在等待的UID</span></span><br><span class="line">    <span class="keyword">private</span> Lock lock;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Copy</p>
+<p>在每次出现等待的情况时，就尝试向图中增加一条边，并进行死锁检测。如果检测到死锁，就撤销这条边，不允许添加，并撤销该事务。</p>
+<h3 id="VM和DM，IM的关系"><a href="#VM和DM，IM的关系" class="headerlink" title="VM和DM，IM的关系"></a>VM和DM，IM的关系</h3><h4 id="数据操作和传输的互动"><a href="#数据操作和传输的互动" class="headerlink" title="数据操作和传输的互动"></a>数据操作和传输的互动</h4><ol>
+<li><strong>事务开始时</strong>：<ul>
+<li>当一个事务开始时，TM 创建一个事务上下文（包括事务ID和其他元数据），并将其标记为活动状态。</li>
+<li>VM 在开始事务时，为这个事务准备一个快照，以支持MVCC，允许事务看到一致的数据视图。</li>
+</ul>
+</li>
+<li><strong>数据读取</strong>：<ul>
+<li>当事务请求读取数据时，VM 首先会查询 TM 确定当前事务的隔离级别和可见性。</li>
+<li>VM 使用TM提供的信息来决定哪个版本的数据对当前事务可见，并从 DM 请求读取相应版本的数据。</li>
+<li>DM 从物理存储中检索数据并返回给 VM，VM 然后再将数据返回给请求的事务。</li>
+</ul>
+</li>
+<li><strong>数据写入</strong>：<ul>
+<li>写操作首先由 VM 接收，它记录要修改的数据版本。</li>
+<li>VM 可能需要与 TM 协商获取必要的锁，以防止其他并发事务对相同数据的干扰。</li>
+<li>数据的新版本被写入前，先在 DM 中创建，包括所有必要的日志信息，以便在发生故障时能够恢复。</li>
+<li>完成写操作后，VM 会更新数据版本，并在事务提交时通知 TM。</li>
+</ul>
+</li>
+<li><strong>事务提交和回滚</strong>：<ul>
+<li>当事务准备提交时，TM 检查所有操作是否成功，并指示 VM 和 DM 提交或回滚所有更改。</li>
+<li>如果事务提交，VM 更新版本控制信息，并确认更改永久保存在 DM。</li>
+<li>如果事务需要回滚，VM 指示 DM 撤销所有未提交的写操作，并恢复数据到事务开始前的状态。</li>
+</ul>
+</li>
+</ol>
+<h2 id="IM"><a href="#IM" class="headerlink" title="IM"></a>IM</h2><p>IM，即 Index Manager，索引管理器，为 MYDB 提供了基于 B+ 树的聚簇索引。目前 MYDB 只支持基于索引查找数据，不支持全表扫描。感兴趣的同学可以自行实现。</p>
+<p>在依赖关系图中可以看到，IM 直接基于 DM，而没有基于 VM。索引的数据被直接插入数据库文件中，而不需要经过版本管理。</p>
+<p>二叉树由一个个 Node 组成，每个 Node 都存储在一条 DataItem 中。结构如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[LeafFlag][KeyNumber][SiblingUid]</span><br><span class="line">[Son0][Key0][Son1][Key1]...[SonN][KeyN]</span><br></pre></td></tr></table></figure>
+
+<p>其中 LeafFlag 标记了该节点是否是个叶子节点；KeyNumber 为该节点中 key 的个数；SiblingUid 是其兄弟节点存储在 DM 中的 UID（通常是sonN+1，保证连续）。</p>
+<p><strong>LeafFlag &#x3D; 0 (非叶子节点)</strong></p>
+<p> <strong>KeyNumber &#x3D; 3</strong> </p>
+<p><strong>SiblingUid &#x3D; 102</strong> </p>
+<p><strong>Son0 &#x3D; 100, Key0 &#x3D; 15, Son1 &#x3D; 101, Key1 &#x3D; 30, Son2 &#x3D; 103, Key2 &#x3D; Long.MAX_VALUE</strong></p>
+<p> <strong>这表示当前节点有三个键（15, 30, MAX_VALUE）和四个子节点（UID分别为100, 101, 103, 和对应的下一个兄弟节点102）。</strong></p>
+<p>后续是穿插的子节点（SonN）和 KeyN。最后的一个 KeyN 始终为 MAX_VALUE，以此方便查找。key0是0-key0的范围</p>
+<p>Node 类持有了其 B+ 树结构的引用，DataItem 的引用和 SubArray 的引用，用于方便快速修改数据和释放数据。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Node</span> &#123;</span><br><span class="line">    BPlusTree tree;</span><br><span class="line">    DataItem dataItem;</span><br><span class="line">    SubArray raw;</span><br><span class="line">    <span class="type">long</span> uid;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="DM和IM的关系"><a href="#DM和IM的关系" class="headerlink" title="DM和IM的关系"></a>DM和IM的关系</h3><h4 id="DM（数据管理）"><a href="#DM（数据管理）" class="headerlink" title="DM（数据管理）"></a>DM（数据管理）</h4><p>在这个上下文中，<code>DM</code>指的是负责存储和管理实际数据的组件。在B+树实现中，每个节点的数据（包括键和指向子节点的指针）通常存储在持久化存储介质上，<code>DM</code>负责这部分数据的读写操作。<code>DataItem</code>是一个抽象，它代表存储在<code>DM</code>中的一块数据。</p>
+<ul>
+<li><strong>数据的读取</strong>：当<code>Node</code>需要被加载时，使用<code>DM</code>的<code>read</code>方法通过节点的唯一标识符（UID）来获取对应的<code>DataItem</code>。例如，<code>loadNode</code>方法在<code>Node</code>类中用于根据UID加载节点，这包括从<code>DM</code>中读取数据并解析为<code>Node</code>的内部表示。</li>
+<li><strong>数据的写入</strong>：当节点数据需要更新或新增时，<code>DM</code>同样负责写入这些更改。例如，在节点分裂时，新节点的数据需要被写入存储系统，这通过<code>DM</code>的<code>insert</code>方法完成，它返回新节点的UID。</li>
+</ul>
+<h4 id="IM（索引管理）"><a href="#IM（索引管理）" class="headerlink" title="IM（索引管理）"></a>IM（索引管理）</h4><p><code>IM</code>则是管理索引的部分，主要负责使用这些数据项（<code>DataItem</code>）来维护和更新索引结构。在这个Java类实现中，<code>Node</code>类本身可以视为<code>IM</code>的一部分，因为它直接处理与索引相关的所有逻辑，包括搜索、插入和分割等操作。</p>
+<h4 id="数据的添加和获取"><a href="#数据的添加和获取" class="headerlink" title="数据的添加和获取"></a>数据的添加和获取</h4><ol>
+<li><strong>添加数据</strong>：<ul>
+<li>插入新键或新子节点时，例如<code>insertAndSplit</code>方法中，<code>Node</code>首先计算插入位置，然后调整现有的键和子节点UIDs，必要时进行节点分裂，并将更改写回到<code>DM</code>。</li>
+</ul>
+</li>
+<li><strong>获取数据</strong>：<ul>
+<li>当需要找到一个键对应的子节点时，<code>searchNext</code>方法被调用。这个方法通过比较节点中存储的键来确定应该访问的子节点的UID。</li>
+<li><code>leafSearchRange</code>方法用于执行范围搜索，它返回一个键范围内的所有相关子节点的UID列表。</li>
+</ul>
+</li>
+</ol>
+<p>IM 对上层模块主要提供两种能力：插入索引和搜索节点。向 B+ 树插入节点和搜索节点的算法和实现，不再赘述。</p>
+<p>这里可能会有疑问，IM 为什么不提供删除索引的能力。当上层模块通过 VM 删除某个 Entry，实际的操作是设置其 XMAX。</p>
+<h2 id="TBM"><a href="#TBM" class="headerlink" title="TBM"></a>TBM</h2><h3 id="解析器"><a href="#解析器" class="headerlink" title="解析器"></a>解析器</h3><p>这个 <code>Tokenizer</code> 类是一个文本解析器，主要用于从一个字节流（例如字符串的字节表示）中提取语义上有意义的标记（tokens）。该解析器能够处理空白字符、标点符号、引号包裹的字符串以及字母数字组成的词。这样的解析器常见于编程语言的编译器、解释器或任何需要从文本输入中提取信息的软件中。</p>
+<p>使用Parser类来对获取到的对应字段进行操作解析对应的语句<br>最后返回定义的参数</p>
+<h3 id="TBM和IM和VM的关系"><a href="#TBM和IM和VM的关系" class="headerlink" title="TBM和IM和VM的关系"></a>TBM和IM和VM的关系</h3><ol>
+<li><p><strong>表的创建和管理</strong>：</p>
+<ul>
+<li>当 TBM 创建新表时，它将表的定义（包括表名和字段信息等）存储在 VM 中。这通常涉及编码表的结构到一个字节流中，并将这个字节流保存在持久化存储中。</li>
+<li>如果表的字段具有索引，TBM 将调用 IM 来创建这些索引。索引的创建包括确定索引的类型（如 B+树），并将索引的根存储在字段定义中。</li>
+</ul>
+</li>
+<li><p><strong>数据查询和修改</strong>：</p>
+<ul>
+<li><p>当执行查询（如 SELECT）时，TBM 可能需要利用 IM 提供的索引来快速定位数据。这涉及到读取字段的索引信息，并通过索引快速找到数据的存储位置。</p>
+</li>
+<li><p>更新或删除操作可能需要修改索引结构，这时 TBM 将指导 IM 调整索引以反映数据的变更。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="CS-BS"><a href="#CS-BS" class="headerlink" title="CS&#x2F;BS"></a>CS&#x2F;BS</h2><p>在您的系统中，Server 和 Client 分别扮演数据库服务提供者和消费者的角色。他们通过使用 Java 套接字（Socket）进行通信，实现命令的发送和数据的接收。这里的实现借助几个关键类：<code>Packager</code>，<code>Transporter</code>，和 <code>Encoder</code>，以及两个入口类 <code>Launcher</code> 用于启动服务器和客户端。下面我将详细解释这些组件的作用和数据传输过程，并给出一个具体的使用例子。</p>
+<h3 id="Server-的作用和实现"><a href="#Server-的作用和实现" class="headerlink" title="Server 的作用和实现"></a>Server 的作用和实现</h3><p><strong>作用</strong>：</p>
+<ul>
+<li>监听一个端口，接收来自客户端的连接请求。</li>
+<li>对每个客户端请求，创建一个新线程（通过 <code>ClientHandler</code> 类）来处理。</li>
+<li>解析客户端发送的 SQL 命令，执行这些命令，并将结果返回给客户端。</li>
+</ul>
+<p><strong>实现</strong>：</p>
+<ul>
+<li><code>Server</code> 类使用 <code>ServerSocket</code> 来监听指定端口的连接请求。一旦有客户端连接，就创建一个新线程来处理该连接。</li>
+<li>在处理线程中（<code>ClientHandler</code>），通过 <code>Packager</code> 类来接收和发送数据包（<code>Package</code>）。</li>
+</ul>
+<h3 id="Client-的作用和实现"><a href="#Client-的作用和实现" class="headerlink" title="Client 的作用和实现"></a>Client 的作用和实现</h3><p><strong>作用</strong>：</p>
+<ul>
+<li>连接到服务器。</li>
+<li>发送 SQL 命令到服务器，并接收执行结果。</li>
+</ul>
+<p><strong>实现</strong>：</p>
+<ul>
+<li><code>Client</code> 类通过套接字连接到服务器，并使用 <code>Packager</code> 来发送和接收数据包。</li>
+<li>提供 <code>execute</code> 方法来发送 SQL 命令并接收结果。</li>
+</ul>
+<h3 id="数据传输"><a href="#数据传输" class="headerlink" title="数据传输"></a>数据传输</h3><ol>
+<li><strong>编码和发送</strong>：<ul>
+<li>客户端通过 <code>Encoder</code> 类将 SQL 命令编码为二进制数据，封装在 <code>Package</code> 对象中。</li>
+<li><code>Packager</code> 类通过 <code>Transporter</code> 将数据包发送出去。数据在发送前会被转换为十六进制字符串以避免特殊字符问题，并通过套接字发送。</li>
+</ul>
+</li>
+<li><strong>接收和解码</strong>：<ul>
+<li>服务器接收到数据后，通过 <code>Transporter</code> 读取数据，然后使用 <code>Encoder</code> 解码。</li>
+<li>解码后的数据包含 SQL 命令，服务器执行这些命令，并将结果（或错误信息）再次通过 <code>Encoder</code> 编码后返回给客户端。</li>
+</ul>
+</li>
+</ol>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://example.com">M.bt</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2024/06/24/MYDB%E9%A1%B9%E7%9B%AE%E8%AF%A6%E8%A7%A3/">http://example.com/2024/06/24/MYDB%E9%A1%B9%E7%9B%AE%E8%AF%A6%E8%A7%A3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">MのBlog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E9%A1%B9%E7%9B%AE/">项目</a></div><div class="post_share"><div class="social-share" data-image="https://blog-img-mbt321.oss-cn-beijing.aliyuncs.com/img/微信图片_20240201205520.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2024/03/21/%E8%B7%A8%E5%9F%9F%E6%93%8D%E4%BD%9C%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/" title="跨域操作的解决方法"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">跨域操作的解决方法</div></div></a></div></nav><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div><div class="comment-switch"><span class="first-comment">Valine</span><span id="switch-btn"></span><span class="second-comment">Livere</span></div></div><div class="comment-wrap"><div><div class="vcomment" id="vcomment"></div></div><div><div id="lv-container" data-id="city" data-uid="MTAyMC81OTQ4My8zNTk0NQ=="></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://blog-img-mbt321.oss-cn-beijing.aliyuncs.com/img/微信图片_20240201205520.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">M.bt</div><div class="author-info__description">专注于后端/全栈,分享生活,分享知识</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">8</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">6</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">12</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/BinTaoMa"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link"><span class="toc-number">1.</span> <span class="toc-text"></span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MYDB"><span class="toc-number">2.</span> <span class="toc-text">MYDB</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TM"><span class="toc-number">3.</span> <span class="toc-text">TM</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#XID-%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84"><span class="toc-number">3.1.</span> <span class="toc-text">XID 文件结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E7%8A%B6%E6%80%81%E7%BC%96%E7%A0%81"><span class="toc-number">3.2.</span> <span class="toc-text">事务状态编码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%81%87%E8%AE%BE%E7%9A%84-XID-%E6%96%87%E4%BB%B6%E5%86%85%E5%AE%B9"><span class="toc-number">3.3.</span> <span class="toc-text">假设的 XID 文件内容</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%87%E4%BB%B6%E5%B8%83%E5%B1%80"><span class="toc-number">3.4.</span> <span class="toc-text">文件布局</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%87%E4%BB%B6%E7%A4%BA%E4%BE%8B%E7%9A%84%E5%AD%97%E8%8A%82%E8%A1%A8%E8%BE%BE%EF%BC%9A"><span class="toc-number">3.5.</span> <span class="toc-text">文件示例的字节表达：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TM%E9%97%AE%E9%A2%98"><span class="toc-number">3.6.</span> <span class="toc-text">TM问题</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DM"><span class="toc-number">4.</span> <span class="toc-text">DM</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%93%E5%AD%98"><span class="toc-number">4.1.</span> <span class="toc-text">缓存</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E7%B3%BB%E7%BB%9F%E7%9A%84%E7%BB%84%E4%BB%B6"><span class="toc-number">4.1.1.</span> <span class="toc-text">缓存系统的组件</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E6%93%8D%E4%BD%9C%E7%9A%84%E6%B5%81%E7%A8%8B"><span class="toc-number">4.1.2.</span> <span class="toc-text">缓存操作的流程</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E7%9A%84%E5%90%8C%E6%AD%A5%E5%92%8C%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8"><span class="toc-number">4.1.3.</span> <span class="toc-text">缓存的同步和线程安全</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.1.4.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E9%97%AE%E9%A2%98"><span class="toc-number">4.1.5.</span> <span class="toc-text">缓存问题</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E9%A1%B5%E9%9D%A2"><span class="toc-number">4.2.</span> <span class="toc-text">缓存页面</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#FSO-Free-Space-Offset-%E8%AF%A6%E8%A7%A3"><span class="toc-number">4.2.1.</span> <span class="toc-text">FSO (Free Space Offset) 详解</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E9%A1%B5%E9%9D%A2%E9%97%AE%E9%A2%98"><span class="toc-number">4.2.2.</span> <span class="toc-text">缓存页面问题</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%97%A5%E5%BF%97"><span class="toc-number">4.3.</span> <span class="toc-text">日志</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%97%A5%E5%BF%97%E8%AF%BB%E5%86%99"><span class="toc-number">4.3.1.</span> <span class="toc-text">日志读写</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%81%A2%E5%A4%8D%E7%AD%96%E7%95%A5"><span class="toc-number">4.3.2.</span> <span class="toc-text">恢复策略</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B5%E9%9D%A2%E7%B4%A2%E5%BC%95"><span class="toc-number">4.4.</span> <span class="toc-text">页面索引</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#VM"><span class="toc-number">5.</span> <span class="toc-text">VM</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#MVCC%E5%92%8C2PL-%E5%8F%AF%E9%87%8D%E5%A4%8D%E5%BA%A6%E5%92%8C%E6%89%A7%E8%A1%8C%E4%B8%B2%E8%A1%8C%E5%8C%96"><span class="toc-number">5.1.</span> <span class="toc-text">MVCC和2PL_可重复度和执行串行化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BB"><span class="toc-number">5.2.</span> <span class="toc-text">可重复读</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AD%BB%E9%94%81%E8%A7%A3%E5%86%B3"><span class="toc-number">5.3.</span> <span class="toc-text">死锁解决</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#VM%E5%92%8CDM%EF%BC%8CIM%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="toc-number">5.4.</span> <span class="toc-text">VM和DM，IM的关系</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E6%93%8D%E4%BD%9C%E5%92%8C%E4%BC%A0%E8%BE%93%E7%9A%84%E4%BA%92%E5%8A%A8"><span class="toc-number">5.4.1.</span> <span class="toc-text">数据操作和传输的互动</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#IM"><span class="toc-number">6.</span> <span class="toc-text">IM</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#DM%E5%92%8CIM%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="toc-number">6.1.</span> <span class="toc-text">DM和IM的关系</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#DM%EF%BC%88%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86%EF%BC%89"><span class="toc-number">6.1.1.</span> <span class="toc-text">DM（数据管理）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#IM%EF%BC%88%E7%B4%A2%E5%BC%95%E7%AE%A1%E7%90%86%EF%BC%89"><span class="toc-number">6.1.2.</span> <span class="toc-text">IM（索引管理）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%9A%84%E6%B7%BB%E5%8A%A0%E5%92%8C%E8%8E%B7%E5%8F%96"><span class="toc-number">6.1.3.</span> <span class="toc-text">数据的添加和获取</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TBM"><span class="toc-number">7.</span> <span class="toc-text">TBM</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="toc-number">7.1.</span> <span class="toc-text">解析器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TBM%E5%92%8CIM%E5%92%8CVM%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="toc-number">7.2.</span> <span class="toc-text">TBM和IM和VM的关系</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CS-BS"><span class="toc-number">8.</span> <span class="toc-text">CS&#x2F;BS</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Server-%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%AE%9E%E7%8E%B0"><span class="toc-number">8.1.</span> <span class="toc-text">Server 的作用和实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Client-%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%AE%9E%E7%8E%B0"><span class="toc-number">8.2.</span> <span class="toc-text">Client 的作用和实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93"><span class="toc-number">8.3.</span> <span class="toc-text">数据传输</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/06/24/MYDB%E9%A1%B9%E7%9B%AE%E8%AF%A6%E8%A7%A3/" title="MYDB项目详解">MYDB项目详解</a><time datetime="2024-06-24T12:07:37.000Z" title="发表于 2024-06-24 20:07:37">2024-06-24</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/03/21/%E8%B7%A8%E5%9F%9F%E6%93%8D%E4%BD%9C%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/" title="跨域操作的解决方法">跨域操作的解决方法</a><time datetime="2024-03-20T16:07:37.000Z" title="发表于 2024-03-21 00:07:37">2024-03-21</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/02/20/Sh%E8%84%9A%E6%9C%AC%E5%AE%9E%E7%8E%B0%E6%95%B0%E6%8D%AE%E5%BA%93%E5%A4%87%E4%BB%BD/" title="Sh脚本实现数据库备份">Sh脚本实现数据库备份</a><time datetime="2024-02-20T15:07:37.000Z" title="发表于 2024-02-20 23:07:37">2024-02-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/02/17/ACM%E7%AE%97%E6%B3%95%E6%80%BB%E7%BB%93/" title="ACM算法总结">ACM算法总结</a><time datetime="2024-02-17T12:07:37.000Z" title="发表于 2024-02-17 20:07:37">2024-02-17</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/02/16/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%9F%BA%E6%9C%AC%E5%91%BD%E4%BB%A4/" title="云服务基本命令">云服务基本命令</a><time datetime="2024-02-16T15:07:37.000Z" title="发表于 2024-02-16 23:07:37">2024-02-16</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2024 By M.bt</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Hi, welcome to my <a target="_blank" rel="noopener" href="https://butterfly.js.org/">blog</a>!</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.12.0"></script><script src="/js/main.js?v=4.12.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.32/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>(() => {
+  const initValine = () => {
+    const valine = new Valine(Object.assign({
+      el: '#vcomment',
+      appId: 'XBG75smReKOg91fNTMY5yECg-gzGzoHsz',
+      appKey: 'iDGpWDqw5e5nW37ZVRDzc6KC',
+      avatar: 'monsterid',
+      serverURLs: '',
+      emojiMaps: "",
+      path: window.location.pathname,
+      visitor: true
+    }, null))
+  }
+
+  const loadValine = async () => {
+    if (typeof Valine === 'function') initValine()
+    else {
+      await getScript('https://cdn.jsdelivr.net/npm/valine@1.5.1/dist/Valine.min.js')
+      initValine()
+    }
+  }
+
+  if ('Valine' === 'Valine' || !false) {
+    if (false) btf.loadComment(document.getElementById('vcomment'),loadValine)
+    else setTimeout(loadValine, 0)
+  } else {
+    window.loadOtherComment = loadValine
+  }
+})()</script><script>(()=>{
+  const loadLivere = () => {
+    if (typeof LivereTower === 'object') window.LivereTower.init()
+    else {
+      (function(d, s) {
+          var j, e = d.getElementsByTagName(s)[0];
+          if (typeof LivereTower === 'function') { return; }
+          j = d.createElement(s);
+          j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+          j.async = true;
+          e.parentNode.insertBefore(j, e);
+      })(document, 'script');
+    }
+  }
+
+  if ('Valine' === 'Livere' || !false) {
+    if (false) btf.loadComment(document.getElementById('lv-container'), loadLivere)
+    else loadLivere()
+  } else {
+    window.loadOtherComment = loadLivere
+  }
+})()</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="true" data-click="true"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.12.0"></script></div></div></body></html>
